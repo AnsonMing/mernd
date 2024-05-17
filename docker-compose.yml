@@ -1,0 +1,99 @@
+# MERN
+version: "3.8"
+
+services:
+  mongoDB:
+    image: mongo
+
+    restart: always
+
+    expose: 
+      - 27017
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+
+    networks:
+      - devenv-network
+
+    env_file:
+      - .env
+
+  
+  express:
+    image: node
+
+    restart: always
+
+    links: 
+      - mongoDB
+
+    networks:
+      - devenv-network
+
+    volumes:
+      - ./code/server:/code
+
+    expose:
+      - 3001
+
+    env_file:
+      - .env
+
+    depends_on:
+      - mongoDB
+    
+    command: "node code/app.js"
+
+  react:
+    image: node
+
+    restart: always
+
+    links: 
+      - mongoDB
+
+    networks:
+      - devenv-network
+
+    volumes:
+      - ./code/client:/code
+
+    expose:
+      - 3000
+
+    env_file:
+      - .env
+
+    depends_on:
+      - mongoDB
+
+    command: /bin/bash -c "cd code;npm start"
+
+  nginx:
+    image: nginx
+
+    restart: always
+
+    links: 
+      - express
+      - react
+    
+    networks:
+      - devenv-network
+    
+    depends_on:
+      - express
+    
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+
+    ports:
+      - 80:80
+      - 443:443
+
+networks:
+  devenv-network:
+    ipam:
+      driver: default
